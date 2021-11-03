@@ -1,0 +1,254 @@
+<html>
+  <head>
+    <title>Daily.co Iframe Demo</title>
+    <script src="https://unpkg.com/@daily-co/daily-js"></script>
+  </head>
+  <body onload="main()">
+    <div
+      style="
+        z-index: 12;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 120px;
+        height: 30px;
+        -webkit-app-region: drag;
+      "
+    ></div>
+    <div
+      id="screenshare"
+      style="
+        display: none;
+        position: fixed;
+        z-index: 7;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+      "
+    >
+      <div
+        id="screenshare-contents"
+        style="
+          background-color: #fefefe;
+          margin: 15% auto;
+          padding: 20px;
+          border: 1px solid #888;
+          width: 60%;
+        "
+      >
+        <div>
+          <select style="width: 100%" id="screenshare-windows"></select>
+        </div>
+        <div style="text-align: right; margin-top: 1em">
+          <button id="screenshare-cancel" onclick="cancelScreenshare()">
+            Cancel
+          </button>
+          <button id="screenshare-start" onclick="startScreenshare()">
+            Start
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      style="text-align: center; width: 60%; margin-left: 20%; margin-top: 20%"
+      id="controls"
+    >
+      <div>
+        <input
+          name="url"
+          id="url"
+          placeholder="URL"
+          value="https://chad-hq.daily.co/howdy"
+          style="font-size: 1.2em; width: 100%; text-align: center"
+          onChange="updateFromUrl()"
+        />
+      </div>
+      <div style="margin-top: 1em">
+        <input
+          name="domain"
+          id="domain"
+          placeholder="Domain"
+          value="chad-hq"
+          style="text-align: center"
+          onChange="updateToUrl()"
+        />
+        <input
+          name="room"
+          id="room"
+          placeholder="Room"
+          value="howdy"
+          style="text-align: center"
+          onChange="updateToUrl()"
+        />
+      </div>
+      <div>
+        <input checked type="checkbox" id="audio" name="audio" />Set system
+        audio devices
+      </div>
+      <div>
+        <select id="cameras" name="cameras">
+          <option value="default">Pre-select a camera</option>
+        </select>
+      </div>
+      <div style="margin-top: 1em">
+        <button id="join" onclick="join()">Join</button>
+      </div>
+    </div>
+
+    <script>
+      const { desktopCapturer } = require("electron");
+      const sd = require("./streamdeck");
+      let domain = "chad-hq";
+      let room = "howdy";
+      let ssdiv = document.querySelector("div#screenshare");
+      let ssSelect = document.querySelector("select#screenshare-windows");
+      let cameras = document.querySelector("#cameras");
+      let audio = document.querySelector("#audio");
+      async function main() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("roomUrl")) {
+          document.querySelector("input#url").value = decodeURIComponent(
+            urlParams.get("roomUrl")
+          );
+          updateFromUrl();
+        }
+        var devices = await navigator.mediaDevices.enumerateDevices();
+        var cameraDevices = devices.filter((d) => d.kind == "videoinput");
+
+        for (var c of cameraDevices) {
+          var opt = document.createElement("option");
+          opt.value = c.label;
+          opt.text = c.label;
+          cameras.appendChild(opt);
+        }
+      }
+
+      async function updateState() {
+        sd.sendState(call.localVideo(), call.localAudio());
+      }
+      async function joinUrl(earl) {
+        console.log("joining earl: ", earl);
+        window.call = DailyIframe.createFrame({
+          url: earl,
+          showLeaveButton: true,
+          iframeStyle: {
+            position: "fixed",
+            width: "100%",
+            height: "100%",
+            right: "0",
+            bottom: "0",
+          },
+          dailyConfig: {
+            experimentalChromeVideoMuteLightOff: true,
+          },
+        });
+
+        call.on("joined-meeting", async (e) => {
+          // open websocket
+          await sd.open();
+          updateState;
+        });
+
+        call.on("participant-updated", updateState);
+
+        call.on("left-meeting", (e) => {
+          // close websocket
+          sd.close();
+          call.destroy();
+        });
+
+        call.on("started-camera", async (e) => {
+          var inputs = {};
+          var outputDeviceId;
+          if (cameras.value != "default") {
+            var devs = await window.call.enumerateDevices();
+            var myCamera = devs.devices.filter(
+              (e) => e.label == cameras.value && e.kind == "videoinput"
+            )[0];
+            inputs.videoDeviceId = myCamera.deviceId;
+          }
+
+          if (audio.checked == true) {
+            console.log("let's set audio then");
+            inputs.audioDeviceId = "default";
+            outputDeviceId = "default";
+          }
+
+          if (inputs.videoDeviceId || inputs.audioDeviceId) {
+            await call.setInputDevicesAsync(inputs);
+          }
+          if (outputDeviceId) {
+            await call.setOutputDevice({ outputDeviceId });
+          }
+        });
+
+        window.call.join();
+      }
+
+      async function join() {
+        let earl = document.querySelector("input#url").value;
+        //window.location = earl
+        joinUrl(earl);
+      }
+
+      function updateFromUrl() {
+        let earl = document.querySelector("input#url").value;
+        let domain = document.querySelector("input#domain");
+        let room = document.querySelector("input#room");
+        let exp = /\/\/(.*).daily.co\/(.*)/;
+        let matches = earl.toLowerCase().match(exp);
+        domain.value = matches[1];
+        room.value = matches[2];
+      }
+
+      function updateToUrl() {
+        let earl = document.querySelector("input#url");
+        let domain = document.querySelector("input#domain");
+        let room = document.querySelector("input#room");
+        earl.value = "https://" + domain.value + ".daily.co/" + room.value;
+      }
+
+      var ipcRenderer = require("electron").ipcRenderer;
+      ipcRenderer.on("share-screen", (e, screens) => {
+        //console.log("got screens: ", screens);
+        for (var thing of screens) {
+          var opt = document.createElement("option");
+          opt.value = thing.id;
+          opt.text = thing.name;
+          ssSelect.appendChild(opt);
+        }
+        ssdiv.style.display = "block";
+        ipcRenderer.on("start-recording", () => {
+          call.startRecording();
+        })
+        ipcRenderer.on("stop-recording", () => {
+          call.stopRecording();
+        })
+        ipcRenderer.on("start-transcription", async () => {
+          await call.startTranscription();
+          call.on('app-message', (msg) => {
+            if (msg?.fromId === 'transcription' && msg.data?.is_final) {
+              console.log(`${msg.data.user_name}: ${msg.data.text}`);
+            }
+          });
+        });
+        ipcRenderer.on("stop-transcription", async () => {
+          await call.stopTranscription();
+        })
+      });
+
+      async function startScreenshare() {
+        ssdiv.style.display = "none";
+        call.startScreenShare({ chromeMediaSourceId: ssSelect.value });
+      }
+
+      async function cancelScreenshare() {
+        ssdiv.style.display = "none";
+      }
+    </script>
+  </body>
+</html>

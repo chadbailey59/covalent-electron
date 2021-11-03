@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8" />
+	<script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+	<title>Single Stream</title>
+  </head>
+  <body>
+	<script>
+		let params = (new URL(document.location)).searchParams;
+		let callFrame = window.DailyIframe.createFrame(
+			{
+				subscribeToTracksAutomatically: false,
+				showLocalVideo: false,
+				showParticipantsBar: false,
+				iframeStyle: {
+					position: 'fixed',
+					border: 'none',
+					width: '100%',
+					height: '100%'
+				  }
+			});
+		window.callFrame = callFrame
+		callFrame.join({ url: 'https://' + params.get('sub') + '.daily.co/' + params.get('room') }).then(() => {
+			// disable this participant's camera and mic, just in case
+			callFrame.setLocalVideo(false)
+			callFrame.setLocalAudio(false)
+			
+			// wait for the participant we want to start sending video and audio?
+			let participant = params.get('participant')
+			callFrame.on('participant-joined', (e) => {
+				console.log("updated: ", e.participant)
+				console.log("session id is ", e.participant.session_id)
+				if(e.participant.session_id == participant) {
+					callFrame.updateParticipant(participant, {setSubscribedTracks: true})
+				}
+			})
+		})
+	</script>
+  </body>
+</html>
