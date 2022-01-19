@@ -1,7 +1,14 @@
 <html>
   <head>
-    <title>Daily.co Iframe Demo</title>
+    <title>Daily</title>
     <script src="https://unpkg.com/@daily-co/daily-js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
+      }
+    </style>
   </head>
   <body onload="main()">
     <div
@@ -85,11 +92,11 @@
           onChange="updateToUrl()"
         />
       </div>
-      <div>
+      <div style="margin-top: 1em">
         <input checked type="checkbox" id="audio" name="audio" />Set system
         audio devices
       </div>
-      <div>
+      <div style="margin-top: 1em">
         <select id="cameras" name="cameras">
           <option value="default">Pre-select a camera</option>
         </select>
@@ -148,7 +155,7 @@
         });
 
         call.on("joined-meeting", async (e) => {
-          // open websocket
+          // open Stream Deck plugin websocket
           await sd.open();
           updateState;
         });
@@ -173,7 +180,7 @@
           }
 
           if (audio.checked == true) {
-            console.log("let's set audio then");
+            //console.log("let's set audio then");
             inputs.audioDeviceId = "default";
             outputDeviceId = "default";
           }
@@ -222,27 +229,29 @@
           ssSelect.appendChild(opt);
         }
         ssdiv.style.display = "block";
-        ipcRenderer.on("start-recording", () => {
-          call.startRecording();
-        })
-        ipcRenderer.on("stop-recording", () => {
-          call.stopRecording();
-        })
-        ipcRenderer.on("start-transcription", async () => {
-          await call.startTranscription();
-          call.on('app-message', (msg) => {
-            if (msg?.fromId === 'transcription' && msg.data?.is_final) {
-              console.log(`${msg.data.user_name}: ${msg.data.text}`);
-            }
-          });
+      });
+
+      ipcRenderer.on("start-recording", () => {
+        call.startRecording();
+      });
+      ipcRenderer.on("stop-recording", () => {
+        call.stopRecording();
+      });
+      ipcRenderer.on("start-transcription", async () => {
+        await call.startTranscription();
+        call.on("app-message", (msg) => {
+          if (msg?.fromId === "transcription" && msg.data?.is_final) {
+            console.log(`${msg.data.user_name}: ${msg.data.text}`);
+          }
         });
-        ipcRenderer.on("stop-transcription", async () => {
-          await call.stopTranscription();
-        })
+      });
+      ipcRenderer.on("stop-transcription", async () => {
+        await call.stopTranscription();
       });
 
       async function startScreenshare() {
         ssdiv.style.display = "none";
+        call.stopScreenShare();
         call.startScreenShare({ chromeMediaSourceId: ssSelect.value });
       }
 
