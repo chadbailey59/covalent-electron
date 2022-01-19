@@ -13,4 +13,6 @@ I use this mostly as a way to have something I can quickly command-tab back to, 
 
 You probably want to head to the Releases section on the right and download a fully built release so you don't have to mess with Electron tooling.
 
+Some of the first-screen features (like preselecting a camera) might not work until you go into a call the first time and grant OS permissions.
+
 If you want to customize the app or help me add features, you can clone the repo, `npm install`, and `npm start` to run your own version. Pull requests and bug reports are welcome!
