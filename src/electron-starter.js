@@ -24,14 +24,18 @@ function createWindow() {
     width: 800,
     height: 600,
     titleBarStyle: "hidden",
+    trafficLightPosition: { x: 10, y: 10 },
+
     webPreferences: {
-      nodeIntegration: true,
+      preload: path.join(__dirname, "preload.js"),
+      //nodeIntegration: true,
       contextIsolation: false,
     },
   });
-  var url = startUrl;
+  //var url = startUrl;
+  var url = "https://daily-mc-mode-staging.vercel.app";
   if (launchUrl) {
-    url = url + "?roomUrl=" + launchUrl;
+    url = url + "?roomUrl=" + launchUrl.replace("http://", "https://"); // Fix Ramya's URLs :)
   }
   mainWindow.loadURL(url);
   mainWindow.webContents.on("new-window", function (e, url) {
@@ -47,9 +51,10 @@ app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
   mainWindow = null;
   ws = null;
-  if (process.platform !== "darwin") {
+  /* if (process.platform !== "darwin") {
     app.quit();
-  }
+  } */
+  app.quit();
 });
 
 app.on("activate", () => {
@@ -60,7 +65,7 @@ app.on("activate", () => {
 
 // for opening from Choosy, etc
 app.on("open-url", function (event, url) {
-  if (typeof mainWindow.loadURL === "function") {
+  if (mainWindow && typeof mainWindow.loadURL === "function") {
     mainWindow.loadURL(startUrl + "?roomUrl=" + url);
   }
   // we're starting up; set launchurl

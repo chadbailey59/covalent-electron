@@ -74,21 +74,21 @@ const template = [
       {
         label: "Start Recording",
         click: () => {
-            mainWindow.webContents.send("start-recording");
-        }
+          mainWindow.webContents.send("start-recording");
+        },
       },
       {
         label: "Stop Recording",
         click: () => {
-            mainWindow.webContents.send("stop-recording");
-        }
+          mainWindow.webContents.send("stop-recording");
+        },
       },
-{
-  label: "Start Transcription",
-  click: () => {
-      mainWindow.webContents.send("start-transcription");
-  }
-}
+      {
+        label: "Start Transcription",
+        click: () => {
+          mainWindow.webContents.send("start-transcription");
+        },
+      },
     ],
   },
   {

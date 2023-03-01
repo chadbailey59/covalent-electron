@@ -151,6 +151,7 @@
             experimentalChromeVideoMuteLightOff: true,
           },
         });
+        window.callObject = window.call; // easier for general use
 
         call.on("joined-meeting", async (e) => {
           // open Stream Deck plugin websocket
